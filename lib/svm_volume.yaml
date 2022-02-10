@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  PreferredSubId:
+    Type: String
+    Default: "something"
+    Description: FSxN preferred subnet ID
+  
+  StandbySubId:
+    Type: String
+    Default: "something"
+    Description: FSxN standby subnet ID
+  
+  SecGroupId:
+    Type: String
+    Default: "something"
+    Description: FSxN security group IDs
+
+Resources:
+  magentoFS:
+    Type: AWS::FSx::FileSystem
+    Properties: 
+      FileSystemType: ONTAP
+      OntapConfiguration: 
+         DeploymentType: "MULTI_AZ_1"
+         DiskIopsConfiguration:
+            Iops: 10000
+            Mode: "USER_PROVISIONED"
+         PreferredSubnetId: !Ref PreferredSubId
+         ThroughputCapacity: 128
+      SecurityGroupIds: 
+        - !Ref SecGroupId
+      StorageCapacity: 1024
+      StorageType: SSD
+      SubnetIds: 
+        - !Ref PreferredSubId
+        - !Ref StandbySubId
+      Tags: 
+        - Key: "Name"
+          Value: "magentoFS"
+
+  magentoSVM:
+    Type: AWS::FSx::StorageVirtualMachine
+    Properties: 
+      FileSystemId:
+        Ref: magentoFS
+      Name: "magentoSVM"
+      RootVolumeSecurityStyle: "MIXED"
+
+  datavol:
+    Type: AWS::FSx::Volume
+    Properties: 
+      Name: "datavol"
+      OntapConfiguration: 
+        JunctionPath: "/datavol"
+        SecurityStyle: "MIXED"
+        SizeInMegabytes: 102400
+        StorageVirtualMachineId: !Ref magentoSVM
+        StorageEfficiencyEnabled: True
+      VolumeType: "ONTAP"
+
+
