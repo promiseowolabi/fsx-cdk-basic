@@ -9,9 +9,11 @@ export class FsxCdkBasicStack extends Stack {
     super(scope, id, props);
 
     const defaultVpc = ec2.Vpc.fromLookup(this, 'VPC', { isDefault: true , region: 'eu-west-1'})
+    const prefSubId = defaultVpc.publicSubnets[0]['subnetId']
+    const standbySubId = defaultVpc.publicSubnets[1]['subnetId']
     const defaultSg = ec2.SecurityGroup.fromLookupByName(this, 'default SG', 'default', defaultVpc)
-    const preferredSubnet = ec2.Subnet.fromSubnetId(this, 'PreferredSubnet', 'subnet-12345678')
-    const standbySubnet = ec2.Subnet.fromSubnetId(this, 'StandbySubnet', 'subnet-12345678')
+    const preferredSubnet = ec2.Subnet.fromSubnetId(this, 'PreferredSubnet', prefSubId)
+    const standbySubnet = ec2.Subnet.fromSubnetId(this, 'StandbySubnet', standbySubId)
 
     const instance = new ec2.Instance(this, 'simple-instance-1', {
       vpc: defaultVpc,
@@ -23,7 +25,7 @@ export class FsxCdkBasicStack extends Stack {
       instanceName: 'simple-instance-1',
       instanceType: ec2.InstanceType.of( // t2.micro has free tier usage in aws
         ec2.InstanceClass.T2,
-        ec2.InstanceSize.MICRO
+        ec2.InstanceSize.MICRO  
       ),
       machineImage: ec2.MachineImage.latestAmazonLinux({
         generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
